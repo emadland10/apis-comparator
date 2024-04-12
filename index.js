@@ -47,7 +47,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
     }
 
     const differences = diff.diffString(originalResponse, testResponse);
-    console.log(`Differences for endpoint ${endpoint}:\n`, differences);
+    console.log(differences);
 }
 
 
