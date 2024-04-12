@@ -1,0 +1,6 @@
+{
+    "ignores": ["price"],
+    "sorts": ["addresses"],
+    "typeOnly": ["txsCount","lastUpdated","totalSupply", "transfersCount", "holdersCount"],
+    "toStrings": []
+}
