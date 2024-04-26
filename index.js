@@ -22,7 +22,7 @@ const options = program.opts();
 async function getResponse(url, method) {
     let response
     try{
-        response = await axios({ url, method });
+        response = (await axios({ url, method })).data;
     }catch(e){
         response = e.response.data;
     }
@@ -32,11 +32,12 @@ async function getResponse(url, method) {
 
 
 async function compareResponses(originalUrl, testUrl, endpoint, method) {
+    console.log(endpoint)
     const startTimeOriginal = Date.now();
-    let originalResponse = (await getResponse(originalUrl + endpoint, method)).data;
+    let originalResponse = (await getResponse(originalUrl + endpoint, method));
     const timeTakenOriginal = Date.now() - startTimeOriginal;
     const testTimeOriginal = Date.now();
-    let testResponse = (await getResponse(testUrl + endpoint, method)).data;
+    let testResponse = (await getResponse(testUrl + endpoint, method));
     timeTakenTimeTest = Date.now() - testTimeOriginal;
     if (options.config) {
         let configFile;
@@ -50,6 +51,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
         testResponse = updateResponse(testResponse, configFile);
     }
     const differences = diff.diffString(originalResponse, testResponse);
+    console.log(`Checking ${method.toUpperCase()} ${endpoint}`)
     console.log(differences);
     console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
 }
