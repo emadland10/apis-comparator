@@ -33,10 +33,10 @@ async function getResponse(url, method) {
 
 async function compareResponses(originalUrl, testUrl, endpoint, method) {
     const startTimeOriginal = Date.now();
-    let originalResponse = await getResponse(originalUrl + endpoint, method);
+    let originalResponse = (await getResponse(originalUrl + endpoint, method)).data;
     const timeTakenOriginal = Date.now() - startTimeOriginal;
     const testTimeOriginal = Date.now();
-    let testResponse = await getResponse(testUrl + endpoint, method);
+    let testResponse = (await getResponse(testUrl + endpoint, method)).data;
     timeTakenTimeTest = Date.now() - testTimeOriginal;
     if (options.config) {
         let configFile;
@@ -46,8 +46,8 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
             console.error('Error: Invalid JSON in config file.');
             process.exit(1);
         }
-        originalResponse = updateResponse(originalResponse.data, configFile);
-        testResponse = updateResponse(testResponse.data, configFile);
+        originalResponse = updateResponse(originalResponse, configFile);
+        testResponse = updateResponse(testResponse, configFile);
     }
     const differences = diff.diffString(originalResponse, testResponse);
     console.log(differences);
