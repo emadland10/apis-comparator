@@ -1,9 +1,10 @@
 const { Command } = require('commander');
+const { minimatch } = require('minimatch')
 const program = new Command();
 const axios = require('axios');
 const diff = require('json-diff');
-const wildcard = require('wildcard');
-const objectPath = require("object-path");
+const _ = require('lodash');
+
 const { version, name, description } = require('./package.json');
 
 program
@@ -22,9 +23,8 @@ async function getResponse(url, method) {
     let response
     try{
         response = await axios({ url, method });
-        return response.data;
     }catch(e){
-        console.log(e);
+        response = e.response.data;
     }
     return response;
 }
@@ -32,8 +32,12 @@ async function getResponse(url, method) {
 
 
 async function compareResponses(originalUrl, testUrl, endpoint, method) {
+    const startTimeOriginal = Date.now();
     let originalResponse = await getResponse(originalUrl + endpoint, method);
+    const timeTakenOriginal = Date.now() - startTimeOriginal;
+    const testTimeOriginal = Date.now();
     let testResponse = await getResponse(testUrl + endpoint, method);
+    timeTakenTimeTest = Date.now() - testTimeOriginal;
     if (options.config) {
         let configFile;
         try {
@@ -42,76 +46,58 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
             console.error('Error: Invalid JSON in config file.');
             process.exit(1);
         }
-        originalResponse = updateResponse(originalResponse, configFile);
-        testResponse = updateResponse(testResponse, configFile);
+        originalResponse = updateResponse(originalResponse.data, configFile);
+        testResponse = updateResponse(testResponse.data, configFile);
     }
-
     const differences = diff.diffString(originalResponse, testResponse);
     console.log(differences);
+    console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
 }
 
 
-function getDeepKeys(obj) {
-    let keys = [];
-    for (let key in obj) {
-        keys.push(key);
-        if (typeof obj[key] === "object") {
-            let subkeys = getDeepKeys(obj[key]);
-            keys = keys.concat(subkeys.map(function (subkey) {
-                return key + "." + subkey;
-            }));
-        }
+function getDeepKeys(obj, depth = 0) {
+    if (depth > 100) { // adjust the limit as needed
+        throw new Error('Maximum recursion depth exceeded');
     }
-    return keys;
+    return _.flatMapDeep(obj, (value, key) => {
+        if (_.isObject(value) && !_.isArray(value)) {
+            return _.map(getDeepKeys(value, depth + 1), subkey => `${key}.${subkey}`);
+        }
+        return key;
+    });
 }
 
 function updateResponse(response , config) {
-
-    for (let path of getDeepKeys(response)) {
+    for (let path of getDeepKeys(response,10)) {
         if (config.ignores) {
             for (let ignore of config.ignores) {
-                if (wildcard(ignore, path)) {
-                    objectPath.set(response, path, "ignored");
-                }
-            }
-        }
-
-        if (config.ignores) {
-            for (let sort of config.sorts) {
-                if (wildcard(sort, path)) {
-                    const original = objectPath.get(response, path);
-                    if (Array.isArray(original)) {
-                        objectPath.set(response, path, original.sort((a, b) => (a[sort.sortField] > b[sort.sortField]) ? 1
-                            : ((b[sort.sortField] > a[sort.sortField]) ? -1 : 0)));
-                    }
-                    objectPath.set(response, path, "ignored");
-                }
+                _.set(response, ignore, "ignored");
             }
         }
 
         if (config.toStrings) {
             for (let filter of config.toStrings) {
-                if (wildcard(filter, path)) {
-                    const original = objectPath.get(response, path);
-                    objectPath.set(response, path, original.toString());
+                if (minimatch(filter, path)) {
+                    const original = _.get(response, path);
+                    _.set(response, path, original.toString());
                 }
             }
         }
 
         if (config.roundNumbers) {
             for (let filter of config.roundNumbers) {
-                if (wildcard(filter, path)) {
-                    const original = objectPath.get(response, path);
-                    objectPath.set(response, path, Math.round(original));
+                if (minimatch(filter, path)) {
+                    const original = _.get(response, path);
+                    _.set(response, path, Math.round(original));
                 }
             }
         }
 
         if (config.typeOnly){
             for (let filter of config.typeOnly) {
-                if (wildcard(filter, path)) {
-                    const original = objectPath.get(response, path);
-                    objectPath.set(response, path, typeof original);
+                if (minimatch(filter, path)) {
+                    const original = _.get(response, path);
+                    _.set(response, path, typeof original);
                 }
             }
         }
@@ -119,5 +105,4 @@ function updateResponse(response , config) {
     }
     return response;
 }
-
 compareResponses(options.original, options.test, options.endpoint, options.method);

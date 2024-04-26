@@ -1,6 +1,6 @@
 {
-    "ignores": ["price"],
+    "ignores": ["debug.requestID", "debug.memUsage", "debug.debugBacktrace", "debug.eth_node", "debug.tx_service_balances", "debug.tx_service_details", "debug.search"],
     "sorts": ["addresses"],
-    "typeOnly": ["txsCount","lastUpdated","totalSupply", "transfersCount", "holdersCount"],
+    "typeOnly": ["txsCount","lastUpdated","totalSupply", "transfersCount", "holdersCount", "issuancesCount"],
     "toStrings": []
 }
