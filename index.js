@@ -57,15 +57,19 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
 }
 
 
-function getDeepKeys(obj, depth = 0) {
+function getDeepKeys(obj, depth = 0, prefix = '') {
     if (depth > 100) { // adjust the limit as needed
         throw new Error('Maximum recursion depth exceeded');
     }
-    return _.flatMapDeep(obj, (value, key) => {
-        if (_.isObject(value) && !_.isArray(value)) {
-            return _.map(getDeepKeys(value, depth + 1), subkey => `${key}.${subkey}`);
+    return _.flatMap(obj, (value, key) => {
+        const newPrefix = prefix ? `${prefix}.${key}` : key;
+        if (_.isArray(value)) {
+            const arrayPaths = _.flatMap(value, (item, index) => getDeepKeys(item, depth + 1, `${newPrefix}[${index}]`));
+            return [newPrefix, ...arrayPaths];
+        } else if (_.isObject(value)) {
+            return [newPrefix, ...getDeepKeys(value, depth + 1, newPrefix)];
         }
-        return key;
+        return newPrefix;
     });
 }
 
@@ -73,7 +77,10 @@ function updateResponse(response , config) {
     for (let path of getDeepKeys(response,10)) {
         if (config.ignores) {
             for (let ignore of config.ignores) {
-                _.set(response, ignore, "ignored");
+                if (minimatch(path, ignore)) {
+                    _.unset(response, path);
+                    break;
+                }
             }
         }
 
@@ -81,7 +88,7 @@ function updateResponse(response , config) {
             for (let filter of config.toStrings) {
                 if (minimatch(filter, path)) {
                     const original = _.get(response, path);
-                    _.set(response, path, original.toString());
+                    _.de(response, path, original.toString());
                 }
             }
         }
