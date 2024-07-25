@@ -51,10 +51,9 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
     }
     const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1});
     if (differences && differences!==""){
-        console.log(`Checking ${method.toUpperCase()} ${endpoint}`);
         console.log(differences);
     } 
-    // console.log(`Checking ${method.toUpperCase()} ${endpoint}`)
+    console.log(`${method.toUpperCase()} ${endpoint}`)
     // console.log(differences);
     // if (timeTakenTimeTest>timeTakenOriginal) {
     //     console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
