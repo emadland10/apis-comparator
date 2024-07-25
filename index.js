@@ -32,7 +32,6 @@ async function getResponse(url, method) {
 
 
 async function compareResponses(originalUrl, testUrl, endpoint, method) {
-    console.log(endpoint)
     const startTimeOriginal = Date.now();
     let originalResponse = (await getResponse(originalUrl + endpoint, method));
     const timeTakenOriginal = Date.now() - startTimeOriginal;
@@ -50,10 +49,16 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
         originalResponse = updateResponse(originalResponse, configFile);
         testResponse = updateResponse(testResponse, configFile);
     }
-    const differences = diff.diffString(originalResponse, testResponse);
-    console.log(`Checking ${method.toUpperCase()} ${endpoint}`)
-    console.log(differences);
-    console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
+    const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1});
+    if (differences && differences!==""){
+        console.log(`Checking ${method.toUpperCase()} ${endpoint}`);
+        console.log(differences);
+    } 
+    // console.log(`Checking ${method.toUpperCase()} ${endpoint}`)
+    // console.log(differences);
+    // if (timeTakenTimeTest>timeTakenOriginal) {
+    //     console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
+    // }
 }
 
 
@@ -62,7 +67,7 @@ function getDeepKeys(obj, depth = 0, prefix = '') {
         throw new Error('Maximum recursion depth exceeded');
     }
     return _.flatMap(obj, (value, key) => {
-        const newPrefix = prefix ? `${prefix}.${key}` : key;
+        const newPrefix = prefix ? `${prefix}.${String(key)}` : String(key);
         if (_.isArray(value)) {
             const arrayPaths = _.flatMap(value, (item, index) => getDeepKeys(item, depth + 1, `${newPrefix}[${index}]`));
             return [newPrefix, ...arrayPaths];
@@ -86,27 +91,39 @@ function updateResponse(response , config) {
 
         if (config.toStrings) {
             for (let filter of config.toStrings) {
-                if (minimatch(filter, path)) {
+                if (minimatch(path, filter)) {
                     const original = _.get(response, path);
-                    _.de(response, path, original.toString());
+                    _.set(response, path, original.toString());
+                    break;
                 }
             }
         }
 
         if (config.roundNumbers) {
             for (let filter of config.roundNumbers) {
-                if (minimatch(filter, path)) {
+                if (minimatch(path, filter)) {
                     const original = _.get(response, path);
                     _.set(response, path, Math.round(original));
+                    break;
                 }
             }
         }
 
         if (config.typeOnly){
             for (let filter of config.typeOnly) {
-                if (minimatch(filter, path)) {
+                if (minimatch(path, filter)) {
                     const original = _.get(response, path);
                     _.set(response, path, typeof original);
+                    break;
+                }
+            }
+        }
+
+        if (config.sortsBy){
+            for (let sortBy of config.sortsBy) {
+                if (minimatch(path, sortBy.path)) {
+                    _.set(response, path, _.sortBy(_.get(response, path), sortBy.keys, sortBy.orders));
+                    break;
                 }
             }
         }

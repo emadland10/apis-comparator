@@ -1,6 +1,7 @@
 {
-    "ignores": ["*time","debug.mongo.num","*totalTime","debug.requestID", "debug.memUsage", "debug.debugBacktrace", "debug.eth_node", "debug.tx_service_balances", "debug.tx_service_details", "debug.search", "debug.requestID","debug.mongoTxFast.dbConnected","debug.mongoTxFull.dbConnected","debug.memory","debug.mongo.dbConnected"],
-    "sorts": ["addresses","debug.redis.*keys"],
+    "ignores": ["*rawValue","**tsAdded"],
+    "sorts": ["addresses"],
     "typeOnly": [],
-    "toStrings": []
+    "toStrings": [],
+    "sortsBy": [{"path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"]}]
 }
