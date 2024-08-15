@@ -15,7 +15,7 @@ program
     .requiredOption('-t, --test <url>', 'Test API URL')
     .option('-e, --endpoint [endpoint]', 'Endpoint', '')
     .option('-m, --method [method]', 'HTTP method', 'get')
-    .option('-r, --retry [retry]', 'Number of retries in case of error', 0)
+    .option('-r, --retry [retry]', 'Number of retries in case of error', 1)
     .option('-c, --config <path>', 'Path to config file')
     .parse();
 const options = program.opts();
