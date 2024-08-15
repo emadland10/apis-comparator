@@ -15,6 +15,7 @@ program
     .requiredOption('-t, --test <url>', 'Test API URL')
     .option('-e, --endpoint [endpoint]', 'Endpoint', '')
     .option('-m, --method [method]', 'HTTP method', 'get')
+    .option('-r, --retry [retry]', 'Number of retries in case of error', 0)
     .option('-c, --config <path>', 'Path to config file')
     .parse();
 const options = program.opts();
@@ -29,9 +30,7 @@ async function getResponse(url, method) {
     return response;
 }
 
-
-
-async function compareResponses(originalUrl, testUrl, endpoint, method) {
+async function compareResponses(originalUrl, testUrl, endpoint, method, retryCount = 1) {
     const startTimeOriginal = Date.now();
     let originalResponse = (await getResponse(originalUrl + endpoint, method));
     const timeTakenOriginal = Date.now() - startTimeOriginal;
@@ -51,9 +50,14 @@ async function compareResponses(originalUrl, testUrl, endpoint, method) {
     }
     const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1});
     if (differences && differences!==""){
-        console.log(differences);
-    } 
-    console.log(`${method.toUpperCase()} ${endpoint}`)
+        if (retryCount < options.retry) {
+            console.log(`Retrying ${retryCount + 1} time`);
+            return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
+        } else {
+            console.log(`${method.toUpperCase()} ${endpoint}`)
+            console.log(differences);
+        }
+    }
     // console.log(differences);
     // if (timeTakenTimeTest>timeTakenOriginal) {
     //     console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
