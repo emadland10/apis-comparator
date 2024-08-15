@@ -30,7 +30,7 @@ async function getResponse(url, method) {
     return response;
 }
 
-async function compareResponses(originalUrl, testUrl, endpoint, method, retryCount = 1) {
+async function compareResponses(originalUrl, testUrl, endpoint, method, retryCount = 0) {
     const startTimeOriginal = Date.now();
     let originalResponse = (await getResponse(originalUrl + endpoint, method));
     const timeTakenOriginal = Date.now() - startTimeOriginal;
