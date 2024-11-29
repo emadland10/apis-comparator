@@ -8,7 +8,7 @@ pipeline {
             steps {
                 script{
                         sh 'npm i'
-                        sh 'logs/getTokenInfoNew.sh'
+                        sh 'logs/last300k-reduced.sh'
                 }
             }
         }
