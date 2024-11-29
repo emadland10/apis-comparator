@@ -16,6 +16,7 @@ program
     .option('-e, --endpoint [endpoint]', 'Endpoint', '')
     .option('-m, --method [method]', 'HTTP method', 'get')
     .option('-r, --retry [retry]', 'Number of retries in case of error', 1)
+    .option('-n, --number [number]', 'Number of replays', 1)
     .option('-c, --config <path>', 'Path to config file')
     .parse();
 const options = program.opts();
@@ -31,9 +32,10 @@ async function getResponse(url, method) {
 }
 
 async function compareResponses(originalUrl, testUrl, endpoint, method, retryCount = 0) {
-    const startTimeOriginal = Date.now();
+    for (let i = 0; i < options.number; i++) {
+         // const startTimeOriginal = Date.now();
     let originalResponse = (await getResponse(originalUrl + endpoint, method));
-    const timeTakenOriginal = Date.now() - startTimeOriginal;
+    // const timeTakenOriginal = Date.now() - startTimeOriginal;
     const testTimeOriginal = Date.now();
     let testResponse = (await getResponse(testUrl + endpoint, method));
     timeTakenTimeTest = Date.now() - testTimeOriginal;
@@ -58,10 +60,10 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
             console.log(differences);
         }
     }
-    // console.log(differences);
     // if (timeTakenTimeTest>timeTakenOriginal) {
     //     console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
-    // }
+    // }   
+    }
 }
 
 

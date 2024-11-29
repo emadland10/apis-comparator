@@ -1,5 +1,5 @@
 {
-    "ignores": ["*rawValue","**tsAdded"],
+    "ignores": ["*rawValue","**tsAdded", "debug.memUsage", "debug.debugBacktrace", "debug.eth_node", "debug.tx_service_balances", "debug.tx_service_details", "debug.search", "debug.requestID", "debug.memory", "debug.totalTime", "*.dbConnected", "*.opts", "*time", "*queries[0]"],
     "sorts": ["addresses"],
     "typeOnly": [],
     "toStrings": [],
