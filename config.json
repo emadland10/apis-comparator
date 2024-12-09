@@ -1,8 +1,9 @@
 {
-    "ignores": ["*rawValue","**tsAdded", "debug.memUsage", "debug.debugBacktrace", "debug.eth_node", "debug.tx_service_balances", "debug.tx_service_details", "debug.search", "debug.requestID", "debug.memory", "debug.totalTime", "*.dbConnected", "*.opts", "*time", "*queries[0]", "*tokenInfo.price"],
+    "ignores": ["*rawValue","**tsAdded", "debug.memUsage", "debug.debugBacktrace", "debug.eth_node", "debug.tx_service_balances", "debug.tx_service_details", "debug.search", "debug.requestID", "debug.memory", "debug.totalTime", "*.dbConnected", "*.opts", "*time", "*queries[0]", "*price"],
     "sorts": ["addresses"],
     "typeOnly": [],
     "toStrings": [],
     "sortsBy": [{"path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"]}],
     "showFullResponse": true
 }
+
