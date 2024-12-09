@@ -53,7 +53,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
         testResponse = updateResponse(testResponse, configFile);
     }
     const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1, full: showFullResponse });
-    if (differences && differences!==""){
+    if (differences && differences!=="" && isColoredString(differences)){
         if (retryCount < options.retry) {
             console.log(`Retrying ${retryCount + 1} time`);
             return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
@@ -139,3 +139,8 @@ function updateResponse(response , config) {
     return response;
 }
 compareResponses(options.original, options.test, options.endpoint, options.method);
+
+function isColoredString(str) {
+    const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/;
+    return ansiRegex.test(str);
+}
