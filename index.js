@@ -39,10 +39,12 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
     const testTimeOriginal = Date.now();
     let testResponse = (await getResponse(testUrl + endpoint, method));
     timeTakenTimeTest = Date.now() - testTimeOriginal;
+    let showFullResponse = false;
     if (options.config) {
         let configFile;
         try {
             configFile = require(options.config);
+            showFullResponse = configFile.showFullResponse || false;
         } catch (error) {
             console.error('Error: Invalid JSON in config file.');
             process.exit(1);
@@ -50,7 +52,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
         originalResponse = updateResponse(originalResponse, configFile);
         testResponse = updateResponse(testResponse, configFile);
     }
-    const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1});
+    const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1, full: showFullResponse });
     if (differences && differences!==""){
         if (retryCount < options.retry) {
             console.log(`Retrying ${retryCount + 1} time`);
