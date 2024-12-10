@@ -8,7 +8,7 @@ pipeline {
             steps {
                 script{
                         sh 'npm i'
-                        sh 'logs/getAddressHistory.sh'
+                        sh 'logs/getTokenInfo.sh'
                 }
             }
         }
