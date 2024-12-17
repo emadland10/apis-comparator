@@ -11,7 +11,7 @@ pipeline {
                         sh "tar -xzf LOGS"
                         sh "ls -la"
                         sh 'npm i'
-                        sh 'node index.js --mode file -o ./logsApi/oldapi.log -t ./logsApi/newapi.log'
+                        sh 'node index.js --mode file -o ./logs/oldapi.log -t ./logs/newapi.log'
                 }
             }
         }
