@@ -1,4 +1,5 @@
 const { Command } = require('commander');
+const fs = require('fs');
 const { minimatch } = require('minimatch')
 const program = new Command();
 const axios = require('axios');
@@ -11,13 +12,14 @@ program
     .name(name)
     .description(description)
     .version(version)
-    .requiredOption('-o, --original <url>', 'Original API URL')
-    .requiredOption('-t, --test <url>', 'Test API URL')
+    .option('--mode <type>', 'mode of operation: url or file', "url")
+    .requiredOption('-o, --original <string>', 'Original API URL for mode "url" or path to file for mode "file')
+    .requiredOption('-t, --test <string>', 'Test API URL for mode "url" or path to file for mode "file')
     .option('-e, --endpoint [endpoint]', 'Endpoint', '')
     .option('-m, --method [method]', 'HTTP method', 'get')
     .option('-r, --retry [retry]', 'Number of retries in case of error', 1)
     .option('-n, --number [number]', 'Number of replays', 1)
-    .option('-c, --config <path>', 'Path to config file')
+    .option('-c, --config <path>', 'Path to config file', './config.json')
     .parse();
 const options = program.opts();
 
@@ -33,39 +35,54 @@ async function getResponse(url, method) {
 
 async function compareResponses(originalUrl, testUrl, endpoint, method, retryCount = 0) {
     for (let i = 0; i < options.number; i++) {
-         // const startTimeOriginal = Date.now();
-    let originalResponse = (await getResponse(originalUrl + endpoint, method));
-    // const timeTakenOriginal = Date.now() - startTimeOriginal;
-    const testTimeOriginal = Date.now();
-    let testResponse = (await getResponse(testUrl + endpoint, method));
-    timeTakenTimeTest = Date.now() - testTimeOriginal;
-    let showFullResponse = false;
-    if (options.config) {
-        let configFile;
-        try {
-            configFile = require(options.config);
-            showFullResponse = configFile.showFullResponse || false;
-        } catch (error) {
-            console.error('Error: Invalid JSON in config file.');
-            process.exit(1);
+        let originalResponse = (await getResponse(originalUrl + endpoint, method));
+        let testResponse = (await getResponse(testUrl + endpoint, method));
+        let showFullResponse = false;
+        if (options.config) {
+            let configFile;
+            try {
+                configFile = require(options.config);
+                showFullResponse = configFile.showFullResponse || false;
+            } catch (error) {
+                console.error('Error: Invalid JSON in config file.');
+                process.exit(1);
+            }
+            originalResponse = updateResponse(originalResponse, configFile);
+            testResponse = updateResponse(testResponse, configFile);
         }
-        originalResponse = updateResponse(originalResponse, configFile);
-        testResponse = updateResponse(testResponse, configFile);
-    }
-    const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1, full: showFullResponse });
-    if (differences && differences!=="" && (differences.includes('-  ')||differences.includes('+  '))){
-        if (retryCount < options.retry) {
-            console.log(`Retrying ${retryCount + 1} time`);
-            return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
-        } else {
-            console.log(`${method.toUpperCase()} ${endpoint}`)
-            console.log(differences);
+        const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1, full: showFullResponse });
+        if (differences && differences!=="" && (differences.includes('-  ')||differences.includes('+  '))){
+            if (retryCount < options.retry) {
+                console.log(`Retrying ${retryCount + 1} time`);
+                return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
+            } else {
+                console.log(`${method.toUpperCase()} ${endpoint}`)
+                console.log(differences);
+            }
         }
     }
-    // if (timeTakenTimeTest>timeTakenOriginal) {
-    //     console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
-    // }   
-    }
+}
+
+function compareJson(originalData, testData) {
+        let showFullResponse = false;
+        if (options.config) {
+            let configFile;
+            try {
+                configFile = require(options.config);
+                showFullResponse = configFile.showFullResponse || false;
+            } catch (error) {
+                console.log(error);
+                console.error('Error: Invalid JSON in config file.');
+                process.exit(1);
+            }
+            originalData.response = updateResponse(originalData.response, configFile);
+            testData.response = updateResponse(testData.response, configFile);
+        }
+        const differences = diff.diffString(originalData.response, testData.response,{maxElisions:1, full: showFullResponse });
+        if (differences && differences!=="" && (differences.includes('-  ')||differences.includes('+  '))){
+                console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
+                console.log(differences);
+        }
 }
 
 
@@ -138,4 +155,33 @@ function updateResponse(response , config) {
     }
     return response;
 }
-compareResponses(options.original, options.test, options.endpoint, options.method);
+if (options.mode === 'file') {
+    const parseFile = (filePath) => {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        const regex = /^(\S+)\s+(\S+)\s+\[(\S+)\]\s+(\S+)\s+(.+)$/;
+        return data.split('\n').map(line => {
+            const match = line.match(regex);
+            if (match) {
+                const [_, date, time, uuid, endpoint, response] = match;
+                return { date, time, uuid, endpoint, response: JSON.parse(response) };
+            }
+            return null;
+        }).filter(entry => entry !== null);
+    };
+    const originalData = parseFile(options.original);
+    const testData = parseFile(options.test);
+    const testDataMap = new Map(testData.map(entry => [entry.uuid, entry]));
+      originalData.forEach(originalEntry => {
+    const testEntry = testDataMap.get(originalEntry.uuid);
+    if (!testEntry) {
+        console.error(`Error: No matching test entry found for UUID: ${originalEntry.uuid}`);
+        return;
+    }
+    compareJson(originalEntry, testEntry);
+  });
+}else if (options.mode === 'url') {
+    compareResponses(options.original, options.test, options.endpoint, options.method);
+}else{
+  console.error('Unsupported mode. Only "file" mode is supported.');
+  process.exit(1);
+}

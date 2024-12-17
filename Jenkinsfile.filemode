@@ -1,0 +1,18 @@
+pipeline {
+     agent { label "builder" }
+     options {
+        disableConcurrentBuilds()
+     }
+     stages {
+        stage('Run script') {
+            steps {
+                script{
+                        unstash 'ORIGINAL'
+                        unstash 'TEST'
+                        sh 'npm i'
+                        sh 'node index.js --mode file -o ./ORIGINAL -t ./TEST'
+                }
+            }
+        }
+    }
+}

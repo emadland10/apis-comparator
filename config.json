@@ -4,6 +4,6 @@
     "typeOnly": [],
     "toStrings": [],
     "sortsBy": [{"path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"]}],
-    "showFullResponse": true
+    "showFullResponse": false
 }
 
