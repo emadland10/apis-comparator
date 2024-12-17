@@ -152,6 +152,10 @@ function updateResponse(response , config) {
             }
         }
 
+        if (Array.isArray(response.tokens) && response.tokens.length === 0) {
+            _.unset(response, 'tokens');
+        }
+
     }
     return response;
 }
