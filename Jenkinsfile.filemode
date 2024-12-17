@@ -7,10 +7,11 @@ pipeline {
         stage('Run script') {
             steps {
                 script{
-                        unstash 'ORIGINAL'
-                        unstash 'TEST'
+                        unstash 'LOGS'
+                        sh "tar -xzf LOGS"
+                        sh "ls -la"
                         sh 'npm i'
-                        sh 'node index.js --mode file -o ./ORIGINAL -t ./TEST'
+                        sh 'node index.js --mode file -o ./LOGS/oldapi.log -t ./LOGS/newapi.log'
                 }
             }
         }
