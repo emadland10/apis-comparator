@@ -5,6 +5,7 @@ const program = new Command();
 const axios = require('axios');
 const _ = require('lodash');
 const diff = require('jest-diff');
+const allowedErrorsNumber = process.env.ALLOWED_ERRORS_NUMBER || 0;
 
 
 const { version, name, description } = require('./package.json');
@@ -65,6 +66,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
 }
 
 function compareJson(originalData, testData) {
+    const errorsCount = 0;
     let showFullResponse = false;
     if (options.config) {
         let configFile;
@@ -80,9 +82,14 @@ function compareJson(originalData, testData) {
         testData.response = updateResponse(testData.response, configFile);
     }
     if (!_.isEqual(originalData.response, testData.response)) {
+        errorsCount++;
         const differences = diff.diff(originalData.response, testData.response, { expand: showFullResponse }).split('\n').slice(2).join('\n');
         console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
         console.log(differences);
+    }
+    if (errorsCount > allowedErrorsNumber) {
+        console.error(`Error: Number of errors ${errorsCount} exceeded the allowed number of ${allowedErrorsNumber}`);
+        process.exit(1);
     }
 }
 
