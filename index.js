@@ -66,7 +66,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
 }
 
 function compareJson(originalData, testData) {
-    const errorsCount = 0;
+    let errorsCount = 0;
     let showFullResponse = false;
     if (options.config) {
         let configFile;
