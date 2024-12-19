@@ -66,7 +66,6 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
 }
 
 function compareJson(originalData, testData) {
-    let errorsCount = 0;
     let showFullResponse = false;
     if (options.config) {
         let configFile;
@@ -82,15 +81,14 @@ function compareJson(originalData, testData) {
         testData.response = updateResponse(testData.response, configFile);
     }
     if (!_.isEqual(originalData.response, testData.response)) {
-        errorsCount++;
         const differences = diff.diff(originalData.response, testData.response, { expand: showFullResponse }).split('\n').slice(2).join('\n');
         console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
         console.log(differences);
+        return false;
+    }else{
+        return true;
     }
-    if (errorsCount > allowedErrorsNumber) {
-        console.error(`Error: Number of errors ${errorsCount} exceeded the allowed number of ${allowedErrorsNumber}`);
-        process.exit(1);
-    }
+
 }
 
 
@@ -168,6 +166,7 @@ function updateResponse(response , config) {
     return response;
 }
 if (options.mode === 'file') {
+    let errorsCount = 0;
     const parseFile = (filePath) => {
         const data = fs.readFileSync(filePath, 'utf-8');
         const regex = /^(\S+)\s+(\S+)\s+\[(\S+)\]\s+(\S+)\s+(.+)$/;
@@ -189,8 +188,12 @@ if (options.mode === 'file') {
         console.error(`Error: No matching test entry found for UUID: ${originalEntry.uuid}`);
         return;
     }
-    compareJson(originalEntry, testEntry);
+    errorsCount += !compareJson(originalEntry, testEntry);
   });
+    if (errorsCount > allowedErrorsNumber) {
+        console.error(`Error: Number of errors ${errorsCount} exceeded the allowed number of ${allowedErrorsNumber}`);
+        process.exit(1);
+    }
 }else if (options.mode === 'url') {
     compareResponses(options.original, options.test, options.endpoint, options.method);
 }else{
