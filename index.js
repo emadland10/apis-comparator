@@ -3,8 +3,9 @@ const fs = require('fs');
 const { minimatch } = require('minimatch')
 const program = new Command();
 const axios = require('axios');
-const diff = require('json-diff');
 const _ = require('lodash');
+const diff = require('jest-diff');
+
 
 const { version, name, description } = require('./package.json');
 
@@ -50,13 +51,13 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
             originalResponse = updateResponse(originalResponse, configFile);
             testResponse = updateResponse(testResponse, configFile);
         }
-        const differences = diff.diffString(originalResponse, testResponse,{maxElisions:1, full: showFullResponse });
-        if (differences && differences!=="" && (differences.includes('-  ')||differences.includes('+  '))){
+        if (!_.isEqual(originalResponse, testResponse)) {
             if (retryCount < options.retry) {
                 console.log(`Retrying ${retryCount + 1} time`);
                 return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
             } else {
-                console.log(`${method.toUpperCase()} ${endpoint}`)
+                const differences = diff.diff(originalData.response, testData.response, { expand: showFullResponse  }).split('\n').slice(2).join('\n');
+                console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
                 console.log(differences);
             }
         }
@@ -64,25 +65,25 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
 }
 
 function compareJson(originalData, testData) {
-        let showFullResponse = false;
-        if (options.config) {
-            let configFile;
-            try {
-                configFile = require(options.config);
-                showFullResponse = configFile.showFullResponse || false;
-            } catch (error) {
-                console.log(error);
-                console.error('Error: Invalid JSON in config file.');
-                process.exit(1);
-            }
-            originalData.response = updateResponse(originalData.response, configFile);
-            testData.response = updateResponse(testData.response, configFile);
+    let showFullResponse = false;
+    if (options.config) {
+        let configFile;
+        try {
+            configFile = require(options.config);
+            showFullResponse = configFile.showFullResponse || false;
+        } catch (error) {
+            console.log(error);
+            console.error('Error: Invalid JSON in config file.');
+            process.exit(1);
         }
-        const differences = diff.diffString(originalData.response, testData.response,{maxElisions:1, full: showFullResponse });
-        if (differences && differences!=="" && (differences.includes('-  ')||differences.includes('+  '))){
-                console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
-                console.log(differences);
-        }
+        originalData.response = updateResponse(originalData.response, configFile);
+        testData.response = updateResponse(testData.response, configFile);
+    }
+    if (!_.isEqual(originalData.response, testData.response)) {
+        const differences = diff.diff(originalData.response, testData.response, { expand: showFullResponse }).split('\n').slice(2).join('\n');
+        console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
+        console.log(differences);
+    }
 }
 
 
