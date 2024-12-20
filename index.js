@@ -194,8 +194,10 @@ if (options.mode === 'file') {
   });
     const errorPercent = (errorsCount / originalData.length) * 100;
     if (errorPercent > allowedErrorsPercent) {
-        console.error(`Error: Number of errors ${errorsCount} exceeded the allowed number of ${allowedErrorsNumber}`);
+        console.error(`Error: Number of errors ${errorsCount} exceeded the allowed percent ${allowedErrorsPercent}% in ${originalData.length} entries`);
         process.exit(1);
+    }else{
+        console.log(`Number of errors ${errorsCount} in ${originalData.length} entries`);
     }
 }else if (options.mode === 'url') {
     compareResponses(options.original, options.test, options.endpoint, options.method);
