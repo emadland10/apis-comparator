@@ -1,0 +1,28 @@
+pipeline {
+     agent { label "builder" }
+     options {
+        disableConcurrentBuilds()
+     }
+     stages {
+        stage('Run script') {
+            steps {
+                script{
+                        unstash 'LOGS'
+                        sh "tar -xzf LOGS"
+                        sh 'npm i'
+                        def status = sh(script: 'node index.js --mode file -o ./logs/oldapi.log -t ./logs/newapi.log', returnStatus: true)
+                        if (status != 0) {
+                            currentBuild.result = 'UNSTABLE'
+                        }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: './logs/oldapi.log', allowEmptyArchive: true
+            archiveArtifacts artifacts: './logs/newapi.log', allowEmptyArchive: true
+            cleanWs()
+        }
+    }
+}

@@ -1,9 +1,12 @@
 const { Command } = require('commander');
+const fs = require('fs');
 const { minimatch } = require('minimatch')
 const program = new Command();
 const axios = require('axios');
-const diff = require('json-diff');
 const _ = require('lodash');
+const diff = require('jest-diff');
+const allowedErrorsPercent = process.env.ALLOWED_ERRORS_PERCENT || 0;
+
 
 const { version, name, description } = require('./package.json');
 
@@ -11,11 +14,14 @@ program
     .name(name)
     .description(description)
     .version(version)
-    .requiredOption('-o, --original <url>', 'Original API URL')
-    .requiredOption('-t, --test <url>', 'Test API URL')
+    .option('--mode <type>', 'mode of operation: url or file', "url")
+    .requiredOption('-o, --original <string>', 'Original API URL for mode "url" or path to file for mode "file')
+    .requiredOption('-t, --test <string>', 'Test API URL for mode "url" or path to file for mode "file')
     .option('-e, --endpoint [endpoint]', 'Endpoint', '')
     .option('-m, --method [method]', 'HTTP method', 'get')
-    .option('-c, --config <path>', 'Path to config file')
+    .option('-r, --retry [retry]', 'Number of retries in case of error', 1)
+    .option('-n, --number [number]', 'Number of replays', 1)
+    .option('-c, --config <path>', 'Path to config file', './config.json')
     .parse();
 const options = program.opts();
 
@@ -29,31 +35,60 @@ async function getResponse(url, method) {
     return response;
 }
 
+async function compareResponses(originalUrl, testUrl, endpoint, method, retryCount = 0) {
+    for (let i = 0; i < options.number; i++) {
+        let originalResponse = (await getResponse(originalUrl + endpoint, method));
+        let testResponse = (await getResponse(testUrl + endpoint, method));
+        let showFullResponse = false;
+        if (options.config) {
+            let configFile;
+            try {
+                configFile = require(options.config);
+                showFullResponse = configFile.showFullResponse || false;
+            } catch (error) {
+                console.error('Error: Invalid JSON in config file.');
+                process.exit(1);
+            }
+            originalResponse = updateResponse(originalResponse, configFile);
+            testResponse = updateResponse(testResponse, configFile);
+        }
+        if (!_.isEqual(originalResponse, testResponse)) {
+            if (retryCount < options.retry) {
+                console.log(`Retrying ${retryCount + 1} time`);
+                return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
+            } else {
+                const differences = diff.diff(originalResponse, testResponse, { expand: showFullResponse  }).split('\n').slice(2).join('\n');
+                console.log(`${method.toUpperCase()} ${endpoint}`)
+                console.log(differences);
+            }
+        }
+    }
+}
 
-
-async function compareResponses(originalUrl, testUrl, endpoint, method) {
-    console.log(endpoint)
-    const startTimeOriginal = Date.now();
-    let originalResponse = (await getResponse(originalUrl + endpoint, method));
-    const timeTakenOriginal = Date.now() - startTimeOriginal;
-    const testTimeOriginal = Date.now();
-    let testResponse = (await getResponse(testUrl + endpoint, method));
-    timeTakenTimeTest = Date.now() - testTimeOriginal;
+function compareJson(originalData, testData) {
+    let showFullResponse = false;
     if (options.config) {
         let configFile;
         try {
             configFile = require(options.config);
+            showFullResponse = configFile.showFullResponse || false;
         } catch (error) {
+            console.log(error);
             console.error('Error: Invalid JSON in config file.');
             process.exit(1);
         }
-        originalResponse = updateResponse(originalResponse, configFile);
-        testResponse = updateResponse(testResponse, configFile);
+        originalData.response = updateResponse(originalData.response, configFile);
+        testData.response = updateResponse(testData.response, configFile);
     }
-    const differences = diff.diffString(originalResponse, testResponse);
-    console.log(`Checking ${method.toUpperCase()} ${endpoint}`)
-    console.log(differences);
-    console.log(`Original time: ${timeTakenOriginal}ms, Test time: ${timeTakenTimeTest}ms`);
+    if (!_.isEqual(originalData.response, testData.response)) {
+        const differences = diff.diff(originalData.response, testData.response, { expand: showFullResponse }).split('\n').slice(2).join('\n');
+        console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
+        console.log(differences);
+        return false;
+    }else{
+        return true;
+    }
+
 }
 
 
@@ -62,7 +97,7 @@ function getDeepKeys(obj, depth = 0, prefix = '') {
         throw new Error('Maximum recursion depth exceeded');
     }
     return _.flatMap(obj, (value, key) => {
-        const newPrefix = prefix ? `${prefix}.${key}` : key;
+        const newPrefix = prefix ? `${prefix}.${String(key)}` : String(key);
         if (_.isArray(value)) {
             const arrayPaths = _.flatMap(value, (item, index) => getDeepKeys(item, depth + 1, `${newPrefix}[${index}]`));
             return [newPrefix, ...arrayPaths];
@@ -86,32 +121,87 @@ function updateResponse(response , config) {
 
         if (config.toStrings) {
             for (let filter of config.toStrings) {
-                if (minimatch(filter, path)) {
+                if (minimatch(path, filter)) {
                     const original = _.get(response, path);
-                    _.de(response, path, original.toString());
+                    _.set(response, path, original.toString());
+                    break;
                 }
             }
         }
 
         if (config.roundNumbers) {
             for (let filter of config.roundNumbers) {
-                if (minimatch(filter, path)) {
+                if (minimatch(path, filter)) {
                     const original = _.get(response, path);
                     _.set(response, path, Math.round(original));
+                    break;
                 }
             }
         }
 
         if (config.typeOnly){
             for (let filter of config.typeOnly) {
-                if (minimatch(filter, path)) {
+                if (minimatch(path, filter)) {
                     const original = _.get(response, path);
                     _.set(response, path, typeof original);
+                    break;
                 }
             }
+        }
+
+        if (config.sortsBy){
+            for (let sortBy of config.sortsBy) {
+                if (minimatch(path, sortBy.path)) {
+                    _.set(response, path, _.sortBy(_.get(response, path), sortBy.keys, sortBy.orders));
+                    break;
+                }
+            }
+        }
+
+        if (Array.isArray(response.tokens) && response.tokens.length === 0) {
+            _.unset(response, 'tokens');
         }
 
     }
     return response;
 }
-compareResponses(options.original, options.test, options.endpoint, options.method);
+if (options.mode === 'file') {
+    let errorsCount = 0;
+    const parseFile = (filePath) => {
+        const data = fs.readFileSync(filePath, 'utf-8');
+        const regex = /^(\S+)\s+(\S+)\s+\[(\S+)\]\s+(\S+)\s+(.+)$/;
+        return data.split('\n').map(line => {
+            const match = line.match(regex);
+            if (match) {
+                const [_, date, time, uuid, endpoint, response] = match;
+                return { date, time, uuid, endpoint, response: JSON.parse(response) };
+            }
+            return null;
+        }).filter(entry => entry !== null);
+    };
+    const originalData = parseFile(options.original);
+    console.log(`Original data: ${originalData.length} entries`);
+    const testData = parseFile(options.test);
+    console.log(`Test data: ${testData.length} entries`);
+    const testDataMap = new Map(testData.map(entry => [entry.uuid, entry]));
+      originalData.forEach(originalEntry => {
+    const testEntry = testDataMap.get(originalEntry.uuid);
+    if (!testEntry) {
+        console.error(`Error: No matching test entry found for UUID: ${originalEntry.uuid}`);
+        return;
+    }
+    errorsCount += !compareJson(originalEntry, testEntry);
+  });
+    const errorPercent = (errorsCount / originalData.length) * 100;
+    if (errorPercent > allowedErrorsPercent) {
+        console.error(`Error: Number of errors ${errorsCount} exceeded the allowed percent ${allowedErrorsPercent}% in ${originalData.length} entries`);
+        process.exit(1);
+    }else{
+        console.log(`Number of errors ${errorsCount} in ${originalData.length} entries`);
+    }
+}else if (options.mode === 'url') {
+    compareResponses(options.original, options.test, options.endpoint, options.method);
+}else{
+  console.error('Unsupported mode. Only "file" mode is supported.');
+  process.exit(1);
+}
