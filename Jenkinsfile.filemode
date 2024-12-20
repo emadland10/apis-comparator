@@ -20,6 +20,7 @@ pipeline {
     }
     post {
         always {
+            archiveArtifacts artifacts: './logs/oldapi.log, ./logs/newapi.log', allowEmptyArchive: true
             cleanWs()
         }
     }

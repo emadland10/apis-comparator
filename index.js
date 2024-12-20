@@ -5,7 +5,7 @@ const program = new Command();
 const axios = require('axios');
 const _ = require('lodash');
 const diff = require('jest-diff');
-const allowedErrorsNumber = process.env.ALLOWED_ERRORS_NUMBER || 0;
+const allowedErrorsPercent = process.env.ALLOWED_ERRORS_PERCENT || 0;
 
 
 const { version, name, description } = require('./package.json');
@@ -57,7 +57,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
                 console.log(`Retrying ${retryCount + 1} time`);
                 return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
             } else {
-                const differences = diff.diff(originalData.response, testData.response, { expand: showFullResponse  }).split('\n').slice(2).join('\n');
+                const differences = diff.diff(originalResponse, testResponse, { expand: showFullResponse  }).split('\n').slice(2).join('\n');
                 console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
                 console.log(differences);
             }
@@ -180,7 +180,9 @@ if (options.mode === 'file') {
         }).filter(entry => entry !== null);
     };
     const originalData = parseFile(options.original);
+    console.log(`Original data: ${originalData.length} entries`);
     const testData = parseFile(options.test);
+    console.log(`Test data: ${testData.length} entries`);
     const testDataMap = new Map(testData.map(entry => [entry.uuid, entry]));
       originalData.forEach(originalEntry => {
     const testEntry = testDataMap.get(originalEntry.uuid);
@@ -190,7 +192,8 @@ if (options.mode === 'file') {
     }
     errorsCount += !compareJson(originalEntry, testEntry);
   });
-    if (errorsCount > allowedErrorsNumber) {
+    const errorPercent = (errorsCount / originalData.length) * 100;
+    if (errorPercent > allowedErrorsPercent) {
         console.error(`Error: Number of errors ${errorsCount} exceeded the allowed number of ${allowedErrorsNumber}`);
         process.exit(1);
     }
