@@ -58,7 +58,7 @@ async function compareResponses(originalUrl, testUrl, endpoint, method, retryCou
                 return compareResponses(originalUrl, testUrl, endpoint, method, retryCount + 1);
             } else {
                 const differences = diff.diff(originalResponse, testResponse, { expand: showFullResponse  }).split('\n').slice(2).join('\n');
-                console.log(`[${originalData.uuid}] ${originalData.endpoint}`);
+                console.log(`${method.toUpperCase()} ${endpoint}`)
                 console.log(differences);
             }
         }
