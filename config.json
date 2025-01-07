@@ -7,12 +7,13 @@
     "allowance": [
         {"path": "*share", "value": 0.011}, 
         {"path": "*holdersCount", "value": 100}, 
+        {"path": "*lastUpdated", "value": 10000}, 
         {"path": "*confirmations", "value": 2}, 
         {"path": "*issuancesCount", "value": 10},
         {"path": "*transfersCount", "value": 10},
         {"path": "*countOps", "value": 10},
         {"path": "*txsCount", "value": 10}
     ],
-    "allowancePercent": [{"path": "*rawBalance", "percent": 0.1},{"path": "*balance", "percent": 0.1}],
+    "allowancePercent": [{"path": "*rawBalance", "percent": 1},{"path": "*balance", "percent": 1}],
     "showFullResponse": false
 }
