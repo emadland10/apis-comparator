@@ -8,6 +8,7 @@ pipeline {
             steps {
                 script{
                         unstash 'LOGS'
+                        archiveArtifacts artifacts: 'LOGS', allowEmptyArchive: false
                         sh "tar -xzf LOGS"
                         sh 'npm i'
                         def status = sh(script: 'node index.js --mode file -o ./logs/oldapi.log -t ./logs/newapi.log', returnStatus: true)

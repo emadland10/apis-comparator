@@ -1,6 +1,7 @@
 const { Command } = require('commander');
 const fs = require('fs');
 const { minimatch } = require('minimatch')
+const micromatch = require('micromatch');
 const program = new Command();
 const axios = require('axios');
 const _ = require('lodash');
@@ -190,7 +191,8 @@ if (options.mode === 'file') {
         console.error(`Error: No matching test entry found for UUID: ${originalEntry.uuid}`);
         return;
     }
-    errorsCount += !compareJson(originalEntry, testEntry);
+    errorsCount += !compareObjects(originalEntry, testEntry);
+    // console.log(compareObjects(originalEntry, testEntry));
   });
     const errorPercent = (errorsCount / originalData.length) * 100;
     if (errorPercent > allowedErrorsPercent) {
@@ -204,4 +206,125 @@ if (options.mode === 'file') {
 }else{
   console.error('Unsupported mode. Only "file" mode is supported.');
   process.exit(1);
+}
+
+function compareObjects(obj1, obj2) {
+    const config = require(options.config);
+    const { ignores, sorts, typeOnly, toStrings, sortsBy, allowance, allowancePercent, showFullResponse } = config;
+    const differences = [];
+    const stats = { totalDifferences: 0, fields: {} };
+
+    function shouldIgnore(path) {
+        return micromatch.isMatch(path, ignores);
+    }
+
+    function sortArrays(obj, paths) {
+        paths.forEach(path => {
+            const array = _.get(obj, path);
+            if (Array.isArray(array)) {
+                array.sort();
+            }
+        });
+    }
+
+    function sortByKeys(obj, sortsBy) {
+        sortsBy.forEach(sortConfig => {
+            const array = _.get(obj, sortConfig.path);
+            if (Array.isArray(array)) {
+                array.sort((a, b) => {
+                    for (let i = 0; i < sortConfig.keys.length; i++) {
+                        const key = sortConfig.keys[i];
+                        const order = sortConfig.orders[i] === 'asc' ? 1 : -1;
+                        if (_.get(a, key) < _.get(b, key)) return -order;
+                        if (_.get(a, key) > _.get(b, key)) return order;
+                    }
+                    return 0;
+                });
+            }
+        });
+    }
+
+    function compareValues(path, original, test) {
+        if (shouldIgnore(path)) return;
+
+        if (typeOnly.includes(path)) {
+            if (typeof original !== typeof test) {
+                differences.push({ path, original, test });
+                stats.totalDifferences++;
+                stats.fields[path] = (stats.fields[path] || 0) + 1;
+            }
+            return;
+        }
+
+        if (toStrings.includes(path)) {
+            original = String(original);
+            test = String(test);
+        }
+
+        if (allowance.some(allow => micromatch.isMatch(path, allow.path))) {
+            const allowedDiff = allowance.find(allow => micromatch.isMatch(path, allow.path)).value;
+            if (Math.abs(original - test) > allowedDiff) {
+                differences.push({ path, original, test });
+                stats.totalDifferences++;
+                stats.fields[path] = (stats.fields[path] || 0) + 1;
+            }
+            return;
+        }
+
+        const allowancePercentConfig = allowancePercent.find(allow => micromatch.isMatch(path, allow.path));
+        if (allowancePercentConfig) {
+            const allowedDiff = (allowancePercentConfig.percent / 100) * Math.max(Math.abs(original), Math.abs(test));
+            if (Math.abs(original - test) > allowedDiff) {
+                differences.push({ path, original, test });
+                stats.totalDifferences++;
+                stats.fields[path] = (stats.fields[path] || 0) + 1;
+            }
+            return;
+        }
+
+        if (original !== test) {
+            differences.push({ path, original, test });
+            stats.totalDifferences++;
+            stats.fields[path] = (stats.fields[path] || 0) + 1;
+        }
+    }
+
+    function traverse(obj1, obj2, path = '') {
+        if (Array.isArray(obj1.tokens) && obj1.tokens.length === 0) {
+            _.unset(obj1, 'tokens');
+        }
+        if (Array.isArray(obj2.tokens) && obj2.tokens.length === 0) {
+            _.unset(obj2, 'tokens');
+        }
+        if (Array.isArray(obj1) && obj1.length === 0) {
+            _.unset(obj1, path);
+        }
+        if (Array.isArray(obj2) && obj2.length === 0) {
+            _.unset(obj2, path);
+        }
+
+        const keys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
+        keys.forEach(key => {
+            const newPath = path ? `${path}.${key}` : key;
+            if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
+                traverse(obj1[key], obj2[key], newPath);
+            } else {
+                compareValues(newPath, obj1[key], obj2[key]);
+            }
+        });
+    }
+
+    sortArrays(obj1.response, sorts);
+    sortArrays(obj2.response, sorts);
+    sortByKeys(obj1.response, sortsBy);
+    sortByKeys(obj2.response, sortsBy);
+    traverse(obj1.response, obj2.response);
+
+    if (stats.totalDifferences !== 0) {
+        compareJson(obj1, obj2);
+        console.log(differences);
+        return false
+    }else{
+        return true;
+    }
 }

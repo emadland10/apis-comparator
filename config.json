@@ -1,8 +1,10 @@
 {
-    "ignores": ["*rawValue","**tsAdded", "debug", "*price"],
+    "ignores": ["*rawValue","**tsAdded", "debug", "*price.*", "*price"],
     "sorts": ["addresses"],
     "typeOnly": [],
     "toStrings": [],
     "sortsBy": [{"path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"]}],
+    "allowance": [{"path": "*share", "value": 0.011}],
+    "allowancePercent": [{"path": "*rawBalance", "percent": 1},{"path": "*balance", "percent": 1}],
     "showFullResponse": false
 }

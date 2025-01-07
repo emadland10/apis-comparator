@@ -14,6 +14,7 @@
     "commander": "^12.0.0",
     "jest-diff": "^29.7.0",
     "lodash": "^4.17.21",
+    "micromatch": "^4.0.8",
     "minimatch": "^9.0.4",
     "object-path": "^0.11.8",
     "wildcard": "^2.0.1"
