@@ -17,5 +17,5 @@
     ],
     "allowancePercent": [{"path": "*rawBalance", "percent": 1},{"path": "*balance", "percent": 1}, {"path": "*totalSupply", "value": 1}],
     "showFullResponse": false,
-    "beautifyDiff": false
+    "beautifyDiff": true
 }
