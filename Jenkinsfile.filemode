@@ -8,8 +8,8 @@ pipeline {
             steps {
                 script{
                         unstash 'LOGS'
-                        archiveArtifacts artifacts: 'LOGS', allowEmptyArchive: false
-                        sh "tar -xzf LOGS"
+                        sh 'mv LOGS logs.tar.gz'
+                        sh "tar -xzf logs.tar.gz"
                         sh 'npm i'
                         def status = sh(script: 'node index.js --mode file -o ./logs/oldapi.log -t ./logs/newapi.log', returnStatus: true)
                         if (status != 0) {
@@ -21,8 +21,9 @@ pipeline {
     }
     post {
         always {
-            archiveArtifacts artifacts: './logs/oldapi.log', allowEmptyArchive: true
-            archiveArtifacts artifacts: './logs/newapi.log', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'logs.tar.gz', allowEmptyArchive: false
+            archiveArtifacts artifacts: 'logs/oldapi.log', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'logs/newapi.log', allowEmptyArchive: true
             cleanWs()
         }
     }

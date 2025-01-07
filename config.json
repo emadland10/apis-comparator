@@ -6,14 +6,16 @@
     "sortsBy": [{"path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"]}],
     "allowance": [
         {"path": "*share", "value": 0.011}, 
-        {"path": "*holdersCount", "value": 100}, 
+        {"path": "*holdersCount", "value": 1000}, 
         {"path": "*lastUpdated", "value": 10000}, 
         {"path": "*confirmations", "value": 10}, 
         {"path": "*issuancesCount", "value": 100},
         {"path": "*transfersCount", "value": 100},
         {"path": "*countOps", "value": 100},
+        {"path": "*ethTransfersCount", "value": 100},
         {"path": "*txsCount", "value": 100}
     ],
-    "allowancePercent": [{"path": "*rawBalance", "percent": 1},{"path": "*balance", "percent": 1}],
-    "showFullResponse": false
+    "allowancePercent": [{"path": "*rawBalance", "percent": 1},{"path": "*balance", "percent": 1}, {"path": "*totalSupply", "value": 1}],
+    "showFullResponse": false,
+    "beautifyDiff": false
 }

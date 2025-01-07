@@ -192,7 +192,6 @@ if (options.mode === 'file') {
         return;
     }
     errorsCount += !compareObjects(originalEntry, testEntry);
-    // console.log(compareObjects(originalEntry, testEntry));
   });
     const errorPercent = (errorsCount / originalData.length) * 100;
     if (errorPercent > allowedErrorsPercent) {
@@ -210,7 +209,7 @@ if (options.mode === 'file') {
 
 function compareObjects(obj1, obj2) {
     const config = require(options.config);
-    const { ignores, sorts, typeOnly, toStrings, sortsBy, allowance, allowancePercent, showFullResponse } = config;
+    const { ignores, sorts, typeOnly, toStrings, sortsBy, allowance, allowancePercent, showFullResponse, beautifyDiff } = config;
     const differences = [];
     const stats = { totalDifferences: 0, fields: {} };
 
@@ -321,6 +320,7 @@ function compareObjects(obj1, obj2) {
     traverse(obj1.response, obj2.response);
 
     if (stats.totalDifferences !== 0) {
+        if ()
         compareJson(obj1, obj2);
         console.log(differences);
         return false
