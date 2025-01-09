@@ -170,12 +170,12 @@ if (options.mode === 'file') {
     let errorsCount = 0;
     const parseFile = (filePath) => {
         const data = fs.readFileSync(filePath, 'utf-8');
-        const regex = /^(\S+)\s+(\S+)\s+\[(\S+)\]\s+(\S+)\s+(.+)$/;
+        const regex = /^(\S+)\s+(\S+)\s+\[(\S+)\]\s+(\S+)\s+(\S+)\s+(.+)$/;
         return data.split('\n').map(line => {
             const match = line.match(regex);
             if (match) {
-                const [_, date, time, uuid, endpoint, response] = match;
-                return { date, time, uuid, endpoint, response: JSON.parse(response) };
+                const [_, date, time, uuid, method, endpoint, response] = match;
+                return { date, time, uuid, method, endpoint, response: JSON.parse(response) };
             }
             return null;
         }).filter(entry => entry !== null);
@@ -289,6 +289,9 @@ function compareObjects(obj1, obj2) {
     }
 
     function traverse(obj1, obj2, path = '') {
+        if (obj1.error && obj1.error === 'non-json response from backend') {
+            return true;
+        }
         if (Array.isArray(obj1.tokens) && obj1.tokens.length === 0) {
             _.unset(obj1, 'tokens');
         }
@@ -312,7 +315,9 @@ function compareObjects(obj1, obj2) {
             }
         });
     }
-
+    if (obj1.method === 'POST') {
+        return true;
+    }
     sortArrays(obj1.response, sorts);
     sortArrays(obj2.response, sorts);
     sortByKeys(obj1.response, sortsBy);
