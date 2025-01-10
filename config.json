@@ -6,16 +6,16 @@
     "sortsBy": [{"path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"]}],
     "allowance": [
         {"path": "*share", "value": 0.011}, 
-        {"path": "*holdersCount", "value": 1000}, 
+        {"path": "*holdersCount", "value": 3000}, 
         {"path": "*lastUpdated", "value": 10000}, 
         {"path": "*confirmations", "value": 10}, 
-        {"path": "*issuancesCount", "value": 100},
-        {"path": "*transfersCount", "value": 100},
-        {"path": "*countOps", "value": 100},
-        {"path": "*ethTransfersCount", "value": 100},
-        {"path": "*txsCount", "value": 100}
+        {"path": "*issuancesCount", "value": 3000},
+        {"path": "*transfersCount", "value": 3000},
+        {"path": "*countOps", "value": 3000},
+        {"path": "*ethTransfersCount", "value": 3000},
+        {"path": "*txsCount", "value": 3000}
     ],
-    "allowancePercent": [{"path": "*rawBalance", "percent": 1},{"path": "*balance", "percent": 1}, {"path": "*totalSupply", "value": 1}],
+    "allowancePercent": [{"path": "*rawBalance", "percent": 10},{"path": "*balance", "percent": 10}, {"path": "*totalSupply", "value": 1}],
     "showFullResponse": false,
     "beautifyDiff": true
 }

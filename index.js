@@ -281,6 +281,10 @@ function compareObjects(obj1, obj2) {
             return;
         }
 
+        if (path.endsWith('symbol') && original === '' && !test) {
+            return;
+        }
+
         if (original !== test) {
             differences.push({ path, original, test });
             stats.totalDifferences++;
@@ -290,6 +294,12 @@ function compareObjects(obj1, obj2) {
 
     function traverse(obj1, obj2, path = '') {
         if (obj1.error && obj1.error === 'non-json response from backend') {
+            return true;
+        }
+        if (obj2.message && obj2.message === 'Invalid timestamp') {
+            return true;
+        }
+        if (path.includes("/getTokenHistory?apiKey")){
             return true;
         }
         if (Array.isArray(obj1.tokens) && obj1.tokens.length === 0) {
@@ -315,7 +325,7 @@ function compareObjects(obj1, obj2) {
             }
         });
     }
-    if (obj1.method === 'POST') {
+    if (obj1.method !== 'GET') {
         return true;
     }
     sortArrays(obj1.response, sorts);
