@@ -296,7 +296,7 @@ function compareObjects(obj1, obj2) {
         if (obj1.error && obj1.error === 'non-json response from backend') {
             return true;
         }
-        if (obj2.message && obj2.message === 'Invalid timestamp') {
+        if (obj2.error && obj2.error.message && obj2.error.message === 'Invalid timestamp') {
             return true;
         }
         if (path.includes("/getTokenHistory?apiKey")){
