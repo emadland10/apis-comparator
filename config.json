@@ -1,5 +1,5 @@
 {
-    "ignores": ["*rawValue","**tsAdded", "debug", "*price", "*currency"],
+    "ignores": ["*rawValue","**tsAdded", "debug", "*price", "*currency", "*cnt"],
     "sorts": ["addresses"],
     "typeOnly": [],
     "toStrings": [],
