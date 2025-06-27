@@ -1,9 +1,10 @@
 {
-    "ignores": ["*rawValue","**tsAdded", "debug", "*price", "*currency", "*cnt"],
-    "sorts": ["addresses"],
-    "typeOnly": [],
-    "toStrings": [],
-    "sortsBy": [{"path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"]}],
-    "showFullResponse": false
+  "ignores": ["*rawValue", "**tsAdded", "*price", "*currency", "*cnt","*volDiff*"],
+  "sorts": ["addresses"],
+  "typeOnly": [],
+  "toStrings": [],
+  "sortsBy": [
+    { "path": "tokens", "keys": ["tokenInfo.address"], "orders": ["asc"] }
+  ],
+  "showFullResponse": false
 }
-
